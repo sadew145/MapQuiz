@@ -1,3 +1,4 @@
+//This file was provided by Dr. Brian Heinold to help with country search.
 function floodFill(canvas, ctx, x, y, red, green, blue) {
 	var x, y, z, currentColor, neighbors;
 	var imgObject = ctx.getImageData(0, 0, canvas.width, canvas.height);
