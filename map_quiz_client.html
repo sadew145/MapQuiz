@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>map_quiz</title>
+	<meta charset="utf-8" />
+	<style>
+		
+		#map {
+			margin-right:2px;
+		}
+		.head {
+			display: inline-block;
+			margin-right: 10px;
+		}
+	</style>
+</head>
+<body>
+	<script src="floodFill.js"></script>
+	<div class="head">
+		<input type="text" id="input" name="input" />
+ 	</div>
+	<div class="head" id="count" >0/50</div>
+	<div class="head" id="clock" >Type in the box on the left to begin</div>
+	<div>
+		<canvas id="canvas" width=600 height=600></canvas>
+		<textarea id="correct" rows=38 cols=30 readonly="readonly"></textarea>
+	</div>
+	
+	
+	<script type="text/javascript">
+		var clock = document.getElementById("clock");
+		var count = document.getElementById("count");
+		var correct = document.getElementById("correct");
+		var canvas = document.getElementById("canvas");
+		var ctx = canvas.getContext('2d');
+		var respond,guesses;
+		
+		
+		window.onload = function(){startServer();};
+		
+		//to draw the map	
+		var img = new Image();
+		img.src='africa.png';
+		img.onload = function() { 	
+		ctx.drawImage(img,0,0,600,600); };
+		
+	
+	
+		var input = document.getElementById("input");
+		input.addEventListener('keyup', makeRequest, false);		
+		
+		var xhr = new XMLHttpRequest();
+		xhr.onreadystatechange = receiveInfo;
+
+
+		function makeRequest() {	
+		//console.log("HELLO");
+			xhr.open("POST", "map_quiz_server.php");
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send("answer="+input.value);
+		}
+
+		function receiveInfo() {
+			//console.log("HERE " + xhr);
+			if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200){
+				//console.log("IN IF");
+				try {
+					var textarea="";
+					var result = xhr.responseText;
+					respond = JSON.parse(result);
+					for(var i =0; i<respond[respond.length-1].length ; i++){
+						textarea+= respond[respond.length-1][i] + "\n";
+					}
+					count.innerHTML = respond[respond.length-2] + "/50";
+					correct.value =textarea;
+					input.value="";
+					guesses = respond[respond.length-2];
+					
+					fF();
+					
+					if (guesses=="50") {
+						input.disabled = 'disabled';
+						alert("You Won!!");
+					}
+				} catch (e) {
+					
+				}
+			}
+		}
+		
+		function fF() {
+			
+			for(var i =0; i <= respond.length-3; i++){
+				var x = parseInt(respond[i].x);
+				var y = parseInt(respond[i].y);
+				floodFill(canvas, ctx, x, parseInt(y), 255, 255, 0);	
+				//input.disabled="disabled";
+			}
+			setTimeout(function(){
+			for(var i =0; i <= respond.length-3; i++){
+				var x = parseInt(respond[i].x);
+				var y = parseInt(respond[i].y);
+				floodFill(canvas, ctx, parseInt(respond[i].x), parseInt(respond[i].y), 255, 0, 0)};
+				//input.removeAttribute('disabled');
+			},500);
+		}
+		function startServer() {	
+			correct.value="";
+			xhr.open("POST", "map_quiz_server.php");
+			xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			xhr.send("start=begin");
+		}
+		
+		//clock
+		var start = 600;
+        var intervalID;
+
+        input.addEventListener('keyup', startTimer, false);
+
+        function startTimer(e) {
+            if (start === 600) {
+                start = Date.now();
+                intervalID = setInterval(updateTime, 200);
+            }
+        }
+
+        function updateTime() {
+            var t = Date.now();
+			var minute = Math.floor((600-Math.round((t-start)/1000))/60);
+			var second = (600-Math.round((t-start)/1000))%60;
+			var s  = (second < 10 ? '0' : '') + second;
+            clock.innerHTML = minute+":"+s;  
+            if ((t-start)/1000 >= 600) { 
+                clearInterval(intervalID); 
+                input.disabled = 'disabled';
+				alert("You lost");
+			}
+			
+		   
+        }
+		
+		
+	</script>
+</body>
+</html>
